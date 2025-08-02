@@ -1,0 +1,589 @@
+#!/usr/bin/env python3
+
+# The CLI agent for AgenticArch Linux.
+# Any contributions are welcomed! Example contribution for beginners: Adding more languages / improving current languages.
+# Yusuf Yıldırım <yusuf@tachion.tech>
+
+import sys
+sys.path.insert(0, '/ace/agent/')
+
+import json
+import subprocess
+import os
+import readline
+from google import genai
+from google.genai import types
+
+class Translations:
+    def __init__(self):
+        self.translations = {
+            'English': {
+                'placeholder': 'What can I do for you?',
+                'processing': 'Processing...',
+                'execute': 'Execute',
+                'copy': 'Copy',
+                'no_description': 'No description',
+                'executing': 'Executing...',
+                'executed_successfully': 'Executed successfully. (No output)',
+                'command_failed': 'Command failed with return code: {}',
+                'timeout': 'Command timed out after 30 seconds.',
+                'error_executing': 'Error executing command: {}',
+                'invalid_response': 'Invalid response format from AI',
+                'error_processing': 'Error processing response: {}',
+                'dangerous_command': 'Dangerous Command',
+                'dangerous_command_text': 'This command might be dangerous:\n{}\n\nDo you want to continue? (y/n)',
+                'main_menu': 'Main Menu',
+                'ask_command': 'Ask for a command',
+                'settings': 'Settings',
+                'exit': 'Exit',
+                'settings_title': 'Settings:',
+                'full_agent_mode': 'Full Agent Mode',
+                'confirm_dangerous': 'Confirm Dangerous Commands',
+                'back_menu': 'Back to main menu',
+                'available_langs': 'Available languages:',
+                'goodbye': 'Goodbye!',
+                'command_input': 'Command requires input:',
+                'command_execute': 'Command to execute:',
+                'options': 'Options:',
+                'execute_option': 'Execute command',
+                'copy_option': 'Copy to clipboard',
+                'cancel_option': 'Cancel',
+                'select_option': 'Select option',
+                'output': 'Output:',
+                'error': 'Error:'
+            },
+            'Turkish': {
+                'placeholder': 'Size nasıl yardımcı olabilirim?',
+                'processing': 'İşleniyor...',
+                'execute': 'Çalıştır',
+                'copy': 'Kopyala',
+                'no_description': 'Açıklama yok',
+                'executing': 'Çalıştırılıyor...',
+                'executed_successfully': 'Başarıyla çalıştırıldı. (Çıktı yok)',
+                'command_failed': 'Komut şu hata koduyla başarısız oldu: {}',
+                'timeout': 'Komut 30 saniye sonra zaman aşımına uğradı.',
+                'error_executing': 'Komut çalıştırılırken hata: {}',
+                'invalid_response': 'AI\'dan geçersiz yanıt formatı',
+                'error_processing': 'Yanıt işlenirken hata: {}',
+                'dangerous_command': 'Tehlikeli Komut',
+                'dangerous_command_text': 'Bu komut tehlikeli olabilir:\n{}\n\nDevam etmek istiyor musunuz? (e/h)',
+                'main_menu': 'Ana Menü',
+                'ask_command': 'Komut iste',
+                'settings': 'Ayarlar',
+                'exit': 'Çıkış',
+                'settings_title': 'Ayarlar:',
+                'full_agent_mode': 'Tam Ajan Modu',
+                'confirm_dangerous': 'Tehlikeli Komutları Onayla',
+                'back_menu': 'Ana menüye dön',
+                'available_langs': 'Mevcut diller:',
+                'goodbye': 'Hoşçakalın!',
+                'command_input': 'Komut giriş gerektiriyor:',
+                'command_execute': 'Çalıştırılacak komut:',
+                'options': 'Seçenekler:',
+                'execute_option': 'Komutu çalıştır',
+                'copy_option': 'Panoya kopyala',
+                'cancel_option': 'İptal',
+                'select_option': 'Seçenek seçin',
+                'output': 'Çıktı:',
+                'error': 'Hata:'
+            },
+            'Spanish': {
+                'placeholder': '¿En qué puedo ayudarte?',
+                'processing': 'Procesando...',
+                'execute': 'Ejecutar',
+                'copy': 'Copiar',
+                'no_description': 'Sin descripción',
+                'executing': 'Ejecutando...',
+                'executed_successfully': 'Ejecutado correctamente. (Sin salida)',
+                'command_failed': 'El comando falló con código de retorno: {}',
+                'timeout': 'El comando ha excedido el tiempo de espera de 30 segundos.',
+                'error_executing': 'Error al ejecutar el comando: {}',
+                'invalid_response': 'Formato de respuesta no válido de la IA',
+                'error_processing': 'Error al procesar la respuesta: {}',
+                'dangerous_command': 'Comando Peligroso',
+                'dangerous_command_text': 'Este comando podría ser peligroso:\n{}\n\n¿Desea continuar? (s/n)',
+                'main_menu': 'Menú Principal',
+                'ask_command': 'Pedir un comando',
+                'settings': 'Configuración',
+                'exit': 'Salir',
+                'settings_title': 'Configuración:',
+                'full_agent_mode': 'Modo Agente Completo',
+                'confirm_dangerous': 'Confirmar Comandos Peligrosos',
+                'back_menu': 'Volver al menú principal',
+                'available_langs': 'Idiomas disponibles:',
+                'goodbye': '¡Adiós!',
+                'command_input': 'El comando requiere entrada:',
+                'command_execute': 'Comando a ejecutar:',
+                'options': 'Opciones:',
+                'execute_option': 'Ejecutar comando',
+                'copy_option': 'Copiar al portapapeles',
+                'cancel_option': 'Cancelar',
+                'select_option': 'Seleccione una opción',
+                'output': 'Salida:',
+                'error': 'Error:'
+            },
+            'French': {
+                'placeholder': 'Comment puis-je vous aider?',
+                'processing': 'Traitement en cours...',
+                'execute': 'Exécuter',
+                'copy': 'Copier',
+                'no_description': 'Pas de description',
+                'executing': 'Exécution...',
+                'executed_successfully': 'Exécuté avec succès. (Pas de sortie)',
+                'command_failed': 'La commande a échoué avec le code de retour: {}',
+                'timeout': 'La commande a expiré après 30 secondes.',
+                'error_executing': 'Erreur lors de l\'exécution de la commande: {}',
+                'invalid_response': 'Format de réponse invalide de l\'IA',
+                'error_processing': 'Erreur lors du traitement de la réponse: {}',
+                'dangerous_command': 'Commande Dangereuse',
+                'dangerous_command_text': 'Cette commande pourrait être dangereuse:\n{}\n\nVoulez-vous continuer? (o/n)',
+                'main_menu': 'Menu Principal',
+                'ask_command': 'Demander une commande',
+                'settings': 'Paramètres',
+                'exit': 'Quitter',
+                'settings_title': 'Paramètres:',
+                'full_agent_mode': 'Mode Agent Complet',
+                'confirm_dangerous': 'Confirmer les Commandes Dangereuses',
+                'back_menu': 'Retour au menu principal',
+                'available_langs': 'Langues disponibles:',
+                'goodbye': 'Au revoir!',
+                'command_input': 'La commande nécessite une entrée:',
+                'command_execute': 'Commande à exécuter:',
+                'options': 'Options:',
+                'execute_option': 'Exécuter la commande',
+                'copy_option': 'Copier dans le presse-papiers',
+                'cancel_option': 'Annuler',
+                'select_option': 'Sélectionnez une option',
+                'output': 'Sortie:',
+                'error': 'Erreur:'
+            },
+            'German': {
+                'placeholder': 'Wie kann ich Ihnen helfen?',
+                'processing': 'Wird verarbeitet...',
+                'execute': 'Ausführen',
+                'copy': 'Kopieren',
+                'no_description': 'Keine Beschreibung',
+                'executing': 'Wird ausgeführt...',
+                'executed_successfully': 'Erfolgreich ausgeführt. (Keine Ausgabe)',
+                'command_failed': 'Befehl fehlgeschlagen mit Rückgabecode: {}',
+                'timeout': 'Befehl nach 30 Sekunden abgelaufen.',
+                'error_executing': 'Fehler beim Ausführen des Befehls: {}',
+                'invalid_response': 'Ungültiges Antwortformat von der KI',
+                'error_processing': 'Fehler beim Verarbeiten der Antwort: {}',
+                'dangerous_command': 'Gefährlicher Befehl',
+                'dangerous_command_text': 'Dieser Befehl könnte gefährlich sein:\n{}\n\nMöchten Sie fortfahren? (j/n)',
+                'main_menu': 'Hauptmenü',
+                'ask_command': 'Befehl anfordern',
+                'settings': 'Einstellungen',
+                'exit': 'Beenden',
+                'settings_title': 'Einstellungen:',
+                'full_agent_mode': 'Vollständiger Agentenmodus',
+                'confirm_dangerous': 'Gefährliche Befehle bestätigen',
+                'back_menu': 'Zurück zum Hauptmenü',
+                'available_langs': 'Verfügbare Sprachen:',
+                'goodbye': 'Auf Wiedersehen!',
+                'command_input': 'Befehl benötigt Eingabe:',
+                'command_execute': 'Befehl ausführen:',
+                'options': 'Optionen:',
+                'execute_option': 'Befehl ausführen',
+                'copy_option': 'In Zwischenablage kopieren',
+                'cancel_option': 'Abbrechen',
+                'select_option': 'Option wählen',
+                'output': 'Ausgabe:',
+                'error': 'Fehler:'
+            },
+            'Russian': {
+                'placeholder': 'Чем я могу вам помочь?',
+                'processing': 'Обработка...',
+                'execute': 'Выполнить',
+                'copy': 'Копировать',
+                'no_description': 'Нет описания',
+                'executing': 'Выполнение...',
+                'executed_successfully': 'Успешно выполнено. (Нет вывода)',
+                'command_failed': 'Команда завершилась с кодом ошибки: {}',
+                'timeout': 'Время выполнения команды истекло (30 секунд).',
+                'error_executing': 'Ошибка выполнения команды: {}',
+                'invalid_response': 'Недопустимый формат ответа ИИ',
+                'error_processing': 'Ошибка обработки ответа: {}',
+                'dangerous_command': 'Опасная Команда',
+                'dangerous_command_text': 'Эта команда может быть опасной:\n{}\n\nПродолжить? (д/н)',
+                'main_menu': 'Главное меню',
+                'ask_command': 'Запросить команду',
+                'settings': 'Настройки',
+                'exit': 'Выход',
+                'settings_title': 'Настройки:',
+                'full_agent_mode': 'Полный режим агента',
+                'confirm_dangerous': 'Подтверждать опасные команды',
+                'back_menu': 'Вернуться в главное меню',
+                'available_langs': 'Доступные языки:',
+                'goodbye': 'До свидания!',
+                'command_input': 'Команда требует ввода:',
+                'command_execute': 'Команда для выполнения:',
+                'options': 'Опции:',
+                'execute_option': 'Выполнить команду',
+                'copy_option': 'Копировать в буфер',
+                'cancel_option': 'Отмена',
+                'select_option': 'Выберите опцию',
+                'output': 'Вывод:',
+                'error': 'Ошибка:'
+            },
+            'Chinese': {
+                'placeholder': '我能为您做什么？',
+                'processing': '处理中...',
+                'execute': '执行',
+                'copy': '复制',
+                'no_description': '无描述',
+                'executing': '正在执行...',
+                'executed_successfully': '执行成功。（无输出）',
+                'command_failed': '命令执行失败，返回代码: {}',
+                'timeout': '命令在30秒后超时。',
+                'error_executing': '执行命令时出错: {}',
+                'invalid_response': 'AI的响应格式无效',
+                'error_processing': '处理响应时出错: {}',
+                'dangerous_command': '危险命令',
+                'dangerous_command_text': '此命令可能很危险:\n{}\n\n是否继续？(y/n)',
+                'main_menu': '主菜单',
+                'ask_command': '请求命令',
+                'settings': '设置',
+                'exit': '退出',
+                'settings_title': '设置:',
+                'full_agent_mode': '完整代理模式',
+                'confirm_dangerous': '确认危险命令',
+                'back_menu': '返回主菜单',
+                'available_langs': '可用语言:',
+                'goodbye': '再见！',
+                'command_input': '命令需要输入:',
+                'command_execute': '要执行的命令:',
+                'options': '选项:',
+                'execute_option': '执行命令',
+                'copy_option': '复制到剪贴板',
+                'cancel_option': '取消',
+                'select_option': '选择选项',
+                'output': '输出:',
+                'error': '错误:'
+            }
+        }
+
+    def get(self, language, key):
+        return self.translations.get(language, self.translations['English']).get(key, key)
+
+class SettingsManager:
+    def __init__(self):
+        self.settings_file = os.path.expanduser('~/.config/arch_agent_settings.json')
+        self.default_settings = {
+            'full_agent_mode': False,
+            'language': 'English',
+            'confirm_dangerous_commands': True
+        }
+        self.settings = self.load_settings()
+    
+    def load_settings(self):
+        try:
+            os.makedirs(os.path.dirname(self.settings_file), exist_ok=True)
+            if os.path.exists(self.settings_file):
+                with open(self.settings_file, 'r') as f:
+                    loaded = json.load(f)
+                    return {**self.default_settings, **loaded}
+            return self.default_settings.copy()
+        except:
+            return self.default_settings.copy()
+    
+    def save_settings(self):
+        try:
+            with open(self.settings_file, 'w') as f:
+                json.dump(self.settings, f, indent=2)
+        except:
+            pass
+    
+    def get(self, key):
+        return self.settings.get(key, self.default_settings.get(key))
+    
+    def set(self, key, value):
+        self.settings[key] = value
+        self.save_settings()
+
+class GeminiWorker:
+    def __init__(self, user_input, language='English'):
+        self.user_input = user_input
+        self.language = language
+
+    def run(self):
+        try:
+            client = genai.Client(api_key="AIzaSyAZL6dmWDySSUf3wz84gglAIqS1obZcJFA")
+            model = "gemini-2.0-flash"
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[types.Part.from_text(text=self.user_input)],
+                ),
+            ]
+            
+            language_instruction = f"Respond in {self.language}. " if self.language != 'English' else ""
+            
+            generate_content_config = types.GenerateContentConfig(
+                response_mime_type="text/plain",
+                system_instruction=[
+                    types.Part.from_text(text=f"""{language_instruction}You are an AI assistant that generates bash commands for Arch Linux (e.g., package management with `pacman`). Your responses must follow this exact format:
+
+For commands that need NO customization:
+{{  
+  "command": "the_bash_command_here",  
+  "description": "Brief explanation of the command.",
+  "inputs": []
+}} 
+
+For commands that need customization:
+{{  
+  "command": "the_bash_command_with_placeholders",  
+  "description": "Brief explanation of the command.",
+  "inputs": [
+    {{"name": "placeholder_name", "label": "Display Label", "default": "default_value"}},
+    {{"name": "another_placeholder", "label": "Another Label", "default": ""}}
+  ]
+}}"""),
+                ],
+            )
+            
+            response_text = ""
+            for chunk in client.models.generate_content_stream(
+                model=model,
+                contents=contents,
+                config=generate_content_config,
+            ):
+                response_text += chunk.text
+            
+            return response_text, None
+        except Exception as e:
+            return None, str(e)
+
+class ArchAgentCLI:
+    def __init__(self):
+        self.settings_manager = SettingsManager()
+        self.translations = Translations()
+        self.history = []
+        self.run()
+
+    def clear_screen(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    def print_banner(self):
+        print("\033[1;34m" + r"""
+
+
+      ___           ___           ___           ___           ___     
+     /\  \         /\  \         /\  \         /\__\         /\  \    
+    /::\  \       /::\  \       /::\  \       /::|  |        \:\  \   
+   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:|:|  |         \:\  \  
+  /::\~\:\  \   /:/  \:\  \   /::\~\:\  \   /:/|:|  |__       /::\  \ 
+ /:/\:\ \:\__\ /:/__/_\:\__\ /:/\:\ \:\__\ /:/ |:| /\__\     /:/\:\__\
+ \/__\:\/:/  / \:\  /\ \/__/ \:\~\:\ \/__/ \/__|:|/:/  /    /:/  \/__/
+      \::/  /   \:\ \:\__\    \:\ \:\__\       |:/:/  /    /:/  /     
+      /:/  /     \:\/:/  /     \:\ \/__/       |::/  /     \/__/      
+     /:/  /       \::/  /       \:\__\         /:/  /                 
+     \/__/         \/__/         \/__/         \/__/                  
+
+        """ + "\033[0m")
+        print("\033[1;36mArch Linux Command Assistant\033[0m\n")
+
+    def extract_json_from_response(self, response):
+        response = response.strip()
+        
+        if response.startswith('```json') and response.endswith('```'):
+            response = response[7:-3].strip()
+        elif response.startswith('```') and response.endswith('```'):
+            response = response[3:-3].strip()
+        
+        json_start = response.find('{')
+        json_end = response.rfind('}') + 1
+        
+        if json_start != -1 and json_end > json_start:
+            response = response[json_start:json_end]
+        
+        return response
+
+    def is_dangerous_command(self, command):
+        dangerous_patterns = ['sudo', 'rm -rf', 'dd if=', 'mkfs', 'fdisk', 'parted', 'systemctl stop', 'systemctl disable', 'chmod 777', 'chown -R']
+        return any(pattern in command.lower() for pattern in dangerous_patterns)
+
+    def execute_command(self, command):
+        lang = self.settings_manager.get('language')
+        
+        if self.settings_manager.get('confirm_dangerous_commands') and self.is_dangerous_command(command):
+            print("\033[1;33m" + self.translations.get(lang, 'dangerous_command_text').format(command) + "\033[0m")
+            confirm = input().strip().lower()
+            if confirm != 'y':
+                return
+        
+        print("\033[1;33m" + self.translations.get(lang, 'executing') + "\033[0m")
+        
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+            
+            if result.stdout or result.stderr:
+                print("\033[1;32m" + self.translations.get(lang, 'output') + "\033[0m")
+                if result.stdout:
+                    print(result.stdout)
+                if result.stderr:
+                    print("\033[1;31m" + self.translations.get(lang, 'error') + "\033[0m")
+                    print(result.stderr)
+                print(f"\nReturn code: {result.returncode}")
+            else:
+                if result.returncode == 0:
+                    print("\033[1;32m" + self.translations.get(lang, 'executed_successfully') + "\033[0m")
+                else:
+                    print("\033[1;31m" + self.translations.get(lang, 'command_failed').format(result.returncode) + "\033[0m")
+                    
+        except subprocess.TimeoutExpired:
+            print("\033[1;31m" + self.translations.get(lang, 'timeout') + "\033[0m")
+        except Exception as e:
+            print("\033[1;31m" + self.translations.get(lang, 'error_executing').format(str(e)) + "\033[0m")
+    def process_command(self, command_data):
+        lang = self.settings_manager.get('language')
+        
+        print("\n\033[1;34m" + command_data.get('description', self.translations.get(lang, 'no_description')) + "\033[0m")
+        
+        command = command_data.get('command', '')
+        inputs = command_data.get('inputs', [])
+        
+        if inputs:
+            print("\n\033[1;36mCommand requires input:\033[0m")
+            for input_config in inputs:
+                default = input_config.get('default', '')
+                value = input(f"{input_config.get('label', 'Input')} [{default}]: ").strip()
+                if not value and default:
+                    value = default
+                command = command.replace(f"{{{input_config['name']}}}", value)
+        
+        print("\n\033[1;35mCommand to execute:\033[0m")
+        print(f"\033[1;33m{command}\033[0m")
+        
+        if self.settings_manager.get('full_agent_mode'):
+            self.execute_command(command)
+        else:
+            print("\n\033[1;36mOptions:\033[0m")
+            print("1. Execute command")
+            print("2. Copy to clipboard")
+            print("3. Cancel")
+            
+            choice = input("Select option (1-3): ").strip()
+            if choice == '1':
+                self.execute_command(command)
+            elif choice == '2':
+                subprocess.run(['xclip', '-selection', 'clipboard'], input=command.encode('utf-8'))
+                print("\033[1;32mCommand copied to clipboard!\033[0m")
+
+    def show_settings(self):
+        lang = self.settings_manager.get('language')
+        self.clear_screen()
+        self.print_banner()
+        
+        print("\033[1;34m" + self.translations.get(lang, 'settings_title') + "\033[0m")
+        print(f"1. {self.translations.get(lang, 'full_agent_mode')}: {'ON' if self.settings_manager.get('full_agent_mode') else 'OFF'}")
+        print(f"2. {self.translations.get(lang, 'confirm_dangerous')}: {'ON' if self.settings_manager.get('confirm_dangerous_commands') else 'OFF'}")
+        print(f"3. {self.translations.get(lang, 'language')}: {self.settings_manager.get('language')}")
+        print(f"4. {self.translations.get(lang, 'back_menu')}")
+        
+        choice = input(f"{self.translations.get(lang, 'select_option')} (1-4): ").strip()
+        
+        if choice == '1':
+            self.settings_manager.set('full_agent_mode', not self.settings_manager.get('full_agent_mode'))
+        elif choice == '2':
+            self.settings_manager.set('confirm_dangerous_commands', not self.settings_manager.get('confirm_dangerous_commands'))
+        elif choice == '3':
+            print(f"\n{self.translations.get(lang, 'available_langs')}")
+            print("1. English")
+            print("2. Turkish")
+            print("3. Spanish")
+            print("4. French")
+            print("5. German")
+            print("6. Russian")
+            print("7. Chinese")
+            lang_choice = input(f"{self.translations.get(lang, 'select_option')} (1-7): ").strip()
+            languages = ['English', 'Turkish', 'Spanish', 'French', 'German', 'Russian', 'Chinese']
+            if lang_choice.isdigit() and 1 <= int(lang_choice) <= 7:
+                self.settings_manager.set('language', languages[int(lang_choice)-1])
+
+    def process_command(self, command_data):
+        lang = self.settings_manager.get('language')
+        
+        print("\n\033[1;34m" + command_data.get('description', self.translations.get(lang, 'no_description')) + "\033[0m")
+        
+        command = command_data.get('command', '')
+        inputs = command_data.get('inputs', [])
+        
+        if inputs:
+            print("\n\033[1;36m" + self.translations.get(lang, 'command_input') + "\033[0m")
+            for input_config in inputs:
+                default = input_config.get('default', '')
+                value = input(f"{input_config.get('label', 'Input')} [{default}]: ").strip()
+                if not value and default:
+                    value = default
+                command = command.replace(f"{{{input_config['name']}}}", value)
+        
+        print("\n\033[1;35m" + self.translations.get(lang, 'command_execute') + "\033[0m")
+        print(f"\033[1;33m{command}\033[0m")
+        
+        if self.settings_manager.get('full_agent_mode'):
+            self.execute_command(command)
+        else:
+            print("\n\033[1;36m" + self.translations.get(lang, 'options') + "\033[0m")
+            print(f"1. {self.translations.get(lang, 'execute_option')}")
+            print(f"2. {self.translations.get(lang, 'copy_option')}")
+            print(f"3. {self.translations.get(lang, 'cancel_option')}")
+            
+            choice = input(f"{self.translations.get(lang, 'select_option')} (1-3): ").strip()
+            if choice == '1':
+                self.execute_command(command)
+            elif choice == '2':
+                subprocess.run(['xclip', '-selection', 'clipboard'], input=command.encode('utf-8'))
+                print("\033[1;32m" + self.translations.get(lang, 'copy_option') + "!\033[0m")
+
+    def run(self):
+        self.clear_screen()
+        self.print_banner()
+        
+        lang = self.settings_manager.get('language')
+        
+        while True:
+            print("\n\033[1;36m" + self.translations.get(lang, 'main_menu') + ":\033[0m")
+            print(f"1. {self.translations.get(lang, 'ask_command')}")
+            print(f"2. {self.translations.get(lang, 'settings')}")
+            print(f"3. {self.translations.get(lang, 'exit')}")
+            
+            choice = input(f"{self.translations.get(lang, 'select_option')} (1-3): ").strip()
+            
+            if choice == '1':
+                user_input = input("\n" + self.translations.get(lang, 'placeholder') + ": ").strip()
+                if not user_input:
+                    continue
+                
+                print("\n" + self.translations.get(lang, 'processing') + "...")
+                
+                worker = GeminiWorker(user_input, self.settings_manager.get('language'))
+                response, error = worker.run()
+                
+                if error:
+                    print("\033[1;31m" + self.translations.get(lang, 'error') + "\033[0m", error)
+                    continue
+                
+                try:
+                    cleaned_response = self.extract_json_from_response(response)
+                    command_data = json.loads(cleaned_response)
+                    self.process_command(command_data)
+                except json.JSONDecodeError:
+                    print("\033[1;31m" + self.translations.get(lang, 'invalid_response') + "\033[0m")
+                    print("Raw response:", response)
+                except Exception as e:
+                    print("\033[1;31m" + self.translations.get(lang, 'error_processing').format(str(e)) + "\033[0m")
+            
+            elif choice == '2':
+                self.show_settings()
+                self.clear_screen()
+                self.print_banner()
+            
+            elif choice == '3':
+                print("\n\033[1;32m" + self.translations.get(lang, 'goodbye') + "\033[0m")
+                break
+
+if __name__ == "__main__":
+    ArchAgentCLI()
