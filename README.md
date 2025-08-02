@@ -106,7 +106,7 @@ Other files / Explanations will be released soon!
 `.automated_script.sh` creates required files, rules and launched LightDM session.
 
 ## "Main Agent" App
-![Agent App](media/agentapp.png "Agent App")
+![Agent App](media/mainagent.png "Agent App")
 
 # Development Process
 - In early 2025, i had this idea, AI-implemented operating systems. I thought there are already some prototypes of this, because it was a cool idea for me. After a quick research, i realised that there is no agentic operating system ever released. I wanted to instantly start this project, but as a 13 year-old student, this year i had a big final exam and working to that. So i didnt be able to.
