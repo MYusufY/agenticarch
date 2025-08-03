@@ -54,7 +54,8 @@ It uses XFCE4 as Desktop Environment, and has multiple agents unlike AgenticCore
 - Improved hardware compatibility.
 
 # Installation
-NOTE:
+NOTE: AgenticArch is not "installable" just for now, we are working on it. Currently you can only test and use it in live-boot.
+
 ## Real Device
 1. Download the latest release of your desired version from [AgenticArch Website](https://agenticarch.tachion.tech/)
 2. Flash it to a USB Drive using tools like [Rufus](https://rufus.ie/), [Balena Etcher](https://etcher.balena.io/) etc.
