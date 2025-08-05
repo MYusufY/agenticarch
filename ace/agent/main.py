@@ -849,7 +849,7 @@ class CommandWidget(QFrame):
         self.command_display.setPlainText(final_command)
 
     def is_dangerous_command(self, command):
-        dangerous_patterns = ['sudo', 'rm -rf', 'dd if=', 'mkfs', 'fdisk', 'parted', 'systemctl stop', 'systemctl disable', 'chmod 777', 'chown -R']
+        dangerous_patterns = ['sudo', 'rm', 'dd if=', 'mkfs', 'fdisk', 'parted', 'systemctl stop', 'systemctl disable', 'chmod 777', 'chown -R']
         return any(pattern in command.lower() for pattern in dangerous_patterns)
 
     def execute_command(self):
